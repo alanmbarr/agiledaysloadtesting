@@ -26,9 +26,10 @@
 <body>
 	<div class="reveal">
 		<div class="slides">
-			<section data-background-color="white" data-background-size="1500px" data-background-image="images/azure.png">
+			<section>
 				<h2>Load Testing in the Azure Cloud</h2>
 				<p>Alan Barr</p>
+				 <img style="background-color:white;" data-src="images/azure.png" alt="Microsoft Azure Cloud Logo">
 			</section>
 			<section>
 				<h3>What is load testing?</h3>
@@ -74,7 +75,7 @@
 				</aside>
 			</section>
 			<section>
-				<img data-src="images/myvu-logo.png">
+				<img alt="My Veterans United Logo" data-src="images/myvu-logo.png">
 				<h3>myVu Challenges</h3>
 				<p class="fragment">All test environments use HTTPS</p>
 				<p class="fragment">Tool would need to handle multipart form uploads</p>
@@ -95,7 +96,7 @@
 						<h4>CasperJS/PhantomJS</h4>
 						<span class="fragment">
 						<p>JavaScript Headless Browser</p>
-						<img style="margin-bottom:150px;" data-src="images/phantomjs-logo.png"> <img data-src="images/casperjs-logo.png">	
+						<img alt="PhantomJS Logo" style="margin-bottom:150px;" data-src="images/phantomjs-logo.png"> <img alt="PhantomJS Logo" data-src="images/casperjs-logo.png">	
 						</span>
 						
 						<p class="fragment">
@@ -178,7 +179,7 @@ casper.run();
 			<section>
 								<h4>Locust.IO</h4>
 								
-								<img style="background-color:white;" data-src="images/locust-logo.png">
+								<img alt="Locust Load Testing Logo"style="background-color:white;" data-src="images/locust-logo.png">
 					<p class="fragment">Python 2.7, Requests and Requests Tool-belt modules</p>
                         <span class="fragment current-visible">
                         <p>Load config data</p>
@@ -261,7 +262,7 @@ class MyLocust(HttpLocust):
 						<h4>Storing Result Data</h4>
 						<span class="fragment current-visible">
                         <p>Configure endpoint to accept data and save it to the NoSQL storage table</p>
-                          <img data-src="images/streamscenario.png">
+                          <img alt="Azure Functions Example Sending data between places" data-src="images/streamscenario.png">
                       </span>
 					<span class="fragment current-visible">
                         <pre>
@@ -306,13 +307,13 @@ class MyLocust(HttpLocust):
                         </pre>
                     </span>
 						<span class="fragment current-visible">
-                          <img data-src="images/storagetable.png">
+                          <img alt="Azure Database with Rows" data-src="images/storagetable.png">
                       </span>
 					</section>
 			</section>
 			<section>
 				<h3>Testing Iteration</h3>
-				<span class="fragment"><img data-src="images/monitoring.png" alt=""></span>
+				<span class="fragment"><img alt="Graph with Monitoring Statistics showing many requests at different times" data-src="images/monitoring.png" alt=""></span>
 				<aside class="notes">
 					We ran initial tests and the performance was not as robust as we expected.
 We ran the tests and we were limited in how many users we could run without causing many disconnects from the server.
