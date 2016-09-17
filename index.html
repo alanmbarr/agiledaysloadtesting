@@ -1,0 +1,423 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+	<title>Load Testing in The Azure Cloud</title>
+
+	<link rel="stylesheet" href="css/reveal.css">
+	<link rel="stylesheet" href="css/loadtest.css">
+	<link rel="stylesheet" href="css/theme/black.css">
+
+	<!-- Theme used for syntax highlighting of code -->
+	<link rel="stylesheet" href="lib/css/monokai-sublime.css">
+	<!-- ToDo: Work on Slides first then on Theme modifications -->
+
+	<!-- Printing and PDF exports -->
+	<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+</head>
+<body>
+	<div class="reveal">
+		<div class="slides">
+			<section data-background-color="white" data-background-size="1500px" data-background-image="images/azure.png">
+				<h2>Load Testing in the Azure Cloud</h2>
+				<p>Alan Barr</p>
+			</section>
+			<section>
+				<h3>What is load testing?</h3>
+				<aside class="notes">
+					Load testing is conducting a test of a system to determine how much load it can sustain for a specific duration.
+				</aside>
+			</section>
+			<section>
+					<h3>Why Load test?</h3>
+					<p class="fragment">
+						Load Testing gives us reporting to know what changes are making the most impact
+					</p>
+					<aside class="notes">
+						Integrating load testing as part of your project ramp up is beneficial at any time. Having knowledge and reporting on what your project can support is beneficial for planning.
+					</aside>
+				</section>
+			<section>
+				<h3>Load Testing myVu</h3>
+				<p>Where do I start?</p>
+				<p class="fragment">What tools are out there I can use off the shelf?</p>
+				<p class="fragment">What constraints do I need to consider when choosing a tool?</p>
+			</section>
+			<section>
+				<h3>Many Tools Available</h3>
+				<p>Open Source and Proprietary, GUI/Code</p>
+				<ul>
+					<li>JMeter</li>
+					<li>Gatling</li>
+					<li>Locust.IO</li>
+				</ul>
+				<ul>
+					<li>Grinder</li>
+					<li>Visual Studio</li>
+					<li>HP Load Runner</li>
+				</ul>
+			</section>
+			<section>
+				<h3>Use the right tool for the job</h3>
+				<aside class="notes">
+					There are many choices of tools available from open source to proprietary. Ideally choose one that is free and popular with
+						resources. Consider the tradeoffs of your challenge. Is GUI good enough? Does it need to be coded? Is it in a language your staff knows?
+						Is it using a domain specific language and is it worth the time to train on it?
+				</aside>
+			</section>
+			<section>
+				<img data-src="images/myvu-logo.png">
+				<h3>myVu Challenges</h3>
+				<p class="fragment">All test environments use HTTPS</p>
+				<p class="fragment">Tool would need to handle multipart form uploads</p>
+				<p class="fragment">
+					Ability to route requests from different locations not from local network
+				</p>
+				<p class="fragment">Allow for different upload scenarios</p>
+				<aside class="notes">
+					The challenges inherent to testing myVU drove adoption of the tool. The primary things the tool would need to support
+						would be to use an authorization token with requests, manage sending requests from different locations at the same time,
+						multipart form uploads.
+				</aside>
+			</section>
+			<section>
+				<section>
+				<h3>The Tools</h3>
+					<section>
+						<h4>CasperJS/PhantomJS</h4>
+						<span class="fragment">
+						<p>JavaScript Headless Browser</p>
+						<img style="margin-bottom:150px;" data-src="images/phantomjs-logo.png"> <img data-src="images/casperjs-logo.png">	
+						</span>
+						
+						<p class="fragment">
+							Login as a user and save authorization tokens for future requests
+						</p>
+						<span class="fragment current-visible">
+							<p>Setup configuration for writing the file, command line options, and specific user config</p>
+							<pre>
+								<code>
+var fs = require('fs');
+var casper = require('casper').create({waitTimeout:10000});
+var user = casper.cli.get('user');
+var config = require('./config.json');
+var urlApp = config["host"];
+var textFileName = user == 'user1' ? "useroauth.txt" : "useroauth1.txt";
+var tokenFileName = user == 'user1' ? "usertoken.txt" : "usertoken1.txt";
+								</code>
+							</pre>
+						</span>
+						<span class="fragment current-visible">
+						<p>Go to the page and fill the form out and submit</p>
+							<pre>
+								<code>
+	casper.start(urlApp, function() {
+	    this.waitForSelector('form', function() {
+	    this.fillSelectors('form', {
+	    	'#LoginId': config[user]['username'],
+	    	'#Password': config[user]['password']
+	    }, true);
+	    });
+	});
+								</code>
+							</pre>
+						</span>
+
+						<span class="fragment current-visible">
+						<p>Wait long enough for cookies to load grab the refresh code</p>
+
+							<pre>
+								<code>
+	casper.then(function() {		
+	    this.wait(5000,function(){
+	        this.echo("saved oauth token");
+	        var cookies = phantom.cookies;
+	        cookies.forEach(function(e){
+	            if(e.name == 'refreshCode') {
+	               var savedCode = e.value.replace(/\%22/g, '');
+                   fs.write(tokenFileName, savedCode, 644);
+                   this.echo("saved refresh token");
+	            }
+	        });
+	    });
+	});
+								</code>
+							</pre>
+						</span>
+						<span class="fragment current-visible">
+						<p>Wait for the authorization header code</p>
+
+							<pre>
+								<code>
+casper.on('resource.requested', function(resource) {
+    var authHeader = resource.headers.forEach(function(e){
+        if(e.name == "Authorization"){
+        var savedAuth = JSON.stringify(e.value).replace(/\"/g, '');
+            fs.write(textFileName, savedAuth, 644);
+        }
+    });
+});
+
+casper.run();
+								</code>
+							</pre>
+						</span>
+
+
+					</section>
+				</section>
+			</section>
+			<section>
+								<h4>Locust.IO</h4>
+								
+								<img style="background-color:white;" data-src="images/locust-logo.png">
+					<p class="fragment">Python 2.7, Requests and Requests Tool-belt modules</p>
+                        <span class="fragment current-visible">
+                        <p>Load config data</p>
+                        <pre><code>
+from locust import HttpLocust, Locust, TaskSet, task, events
+from requests_toolbelt import MultipartEncoder
+import requests
+import json
+from random import randint
+import sys
+import datetime
+requests.packages.urllib3.disable_warnings()
+token0 = open("useroauth.txt", 'r').read()
+token1 = open("useroauth1.txt", 'r').read()
+refreshToken0 = open("usertoken.txt", 'r').read()
+refreshToken1 = open("usertoken1.txt", 'r').read()
+config = json.load(open("config.json"))
+token = [token0,token1]
+atlasID = {token0: config["user1"]["loanAccount"],
+token1: config["user2"]["loanAccount"]}
+host = config["host"]
+                                </code>
+                            </pre>
+                        </span>
+<span class="fragment current-visible">
+                        <p>Create a task to run</p>
+                        <pre>
+                        	<code>
+
+class MyTaskSet1(TaskSet):
+
+@task
+def file_upload(self):
+global token
+attach = open('assets/Intro_to_Agile.pdf', 'rb')
+randomNumber = randint(0, 1)
+thisToken = token[randomNumber]
+headers = {
+'Authorization': thisToken,
+}
+m = MultipartEncoder(
+fields={
+'atlasLeadId':atlasID[thisToken],'blitzDocFolderId':'-1','documentType':'upload',
+'file0': ('Intro_To_Agile.pdf', attach, 'application/pdf', {'Expires': '0'})}
+)
+r = self.client.post("/api/fileStorage/Upload",
+data=m,headers=headers, verify=False, catch_response=False)
+print("Locust instance ({}) executing my_task".format(self.locust))
+                                </code>
+                        </pre>
+</span>
+                        <span class="fragment current-visible">
+                        <p>Let Locust know what tasks to run</p>
+                        <pre><code>
+class MyLocust(HttpLocust):
+    min_wait = 5000
+    max_wait = 15000
+    host = config["host"]
+    task_set = MyTaskSet1
+                        
+                                </code>
+                            </pre>
+                        </span>
+			</section>
+			<section>
+			<h4>Azure Cloud</h4>
+					<br>
+					<p>Create a distributed environment to simulate distant users</p>
+					<br>
+					<ul>
+						<li>Set up a network gateway</li>
+						<li>Set up Linux Virtual Machines</li>
+						<li>Configure ports so machines can communicate</li>
+						<li>Open a port so these machines can access your network</li>
+						<li>Optionally: Setup an Azure Function Endpoint to send results to an Azure Storage Table</li>
+					</ul>
+			</section>
+			<section>
+					<section>
+						<h4>Storing Result Data</h4>
+						<span class="fragment current-visible">
+                        <p>Configure endpoint to accept data and save it to the NoSQL storage table</p>
+                          <img data-src="images/streamscenario.png">
+                      </span>
+					<span class="fragment current-visible">
+                        <pre>
+                        	<code>
+    module.exports = function (context, data) {
+    context.log("received report");
+
+    if(data) {
+        context.res = {status: 200};
+        
+        context.bindings.locustoutputTable = 
+        { 
+            "partitionKey":"l",
+            "rowKey": context.bindingData.InvocationId,
+            "client_id" : data.client_id,
+            "user_count" : data.user_count,
+            "name" : data.name,
+            "method" : data.method,
+            "max_response_time" : data.max_response_time,
+            "total_response_time" : data.total_response_time,
+            "min_response_time" : data.min_response_time,
+            "last_request_timestamp" : data.last_request_timestamp,
+            "num_requests" : data.num_requests,
+            "total_content_length" : data.total_content_length,
+            "num_failures" : data.num_failures,
+            "start_time" : data.start_time,
+            "test_name" : data.test_name,
+            "num_reqs_per_sec": data.num_reqs_per_sec,
+            "response_times": data.response_times
+        };
+    }
+    else {
+        context.res = {
+            status: 400,
+            body: { error: 'Must be submitted as Locust Report Data'}
+        };
+    }
+
+    context.done();
+}
+                            </code>
+                        </pre>
+                    </span>
+						<span class="fragment current-visible">
+                          <img data-src="images/storagetable.png">
+                      </span>
+					</section>
+			</section>
+			<section>
+				<h3>Testing Iteration</h3>
+				<span class="fragment"><img data-src="images/monitoring.png" alt=""></span>
+				<aside class="notes">
+					We ran initial tests and the performance was not as robust as we expected.
+We ran the tests and we were limited in how many users we could run without causing many disconnects from the server.
+We monitored our file upload durations in our logging system but the performance seemed rather poor.
+
+We also did not have a lot of information on the state of our webservers.
+We purchased a service to monitor our test bed webserver and were able to see much finer grain data about our test results.
+With communication aout our results we learned that the internal testing network was bandwidth constrained from 10mb/s to 200mb/s
+				</aside>
+			</section>
+			<section>
+				<h3>Monitoring Results</h3>
+				<aside class="notes">We were now able to push more users through the funnel.
+Drilling into the web server monitoring software we learned that our main bottleneck is logging.
+Waiting for a shared log to become available was causing the biggest pause.
+We determined that all loggers and log readers work on the same file causing performance issues
+				</aside>
+			</section>
+			<section>
+				<h3 class="fragment">Testing Our Hypothesis</h3>
+				<p class="fragment">Can we improve upload times by changing how we log our data?</p>
+<span class="fragment">
+<p class="skyblue">Test run with current logging on</p>
+<table>
+	<thead>
+		<tr>		
+			<td># Requests</td>
+			<td># Failed</td>
+			<td>Median</td>
+			<td>Average</td>
+			<td>Min Resp</td>
+			<td>Max Resp</td>
+			<td># Reqs/second</td>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>4107</td>
+			<td>2135</td>
+			<td>31</td>
+			<td>32.4</td>
+			<td>0</td>
+			<td>108</td>
+			<td>0.63</td>
+		</tr>
+	</tbody>
+</table>
+
+<p class="skyblue">Test run with experimental logging utility</p>
+				<table>
+	<thead>
+		<tr>
+			<td># Requests</td>
+			<td># Failed</td>
+			<td>Median</td>
+			<td>Average</td>
+			<td>Min Resp</td>
+			<td>Max Resp</td>
+			<td># Reqs/second</td>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>495</td>
+			<td>588</td>
+			<td>11</td>
+			<td>11.38</td>
+			<td>0</td>
+			<td>22.8</td>
+			<td>0.5</td>
+		</tr>
+	</tbody>
+</table>
+	<p><small>Request times in seconds</small></p>
+</span>
+			</section>
+		<section>
+			<h3>Results</h3>
+			<p>65% decrease in the median and average upload times</p>
+			<p class="fragment">Small change with an impressive impact</p>
+			<aside class="notes">
+				
+			</aside>
+		</section>
+		<section>
+			<h3>Thank You</h3>
+		</section>
+		</div>
+	</div>
+	<script src="lib/js/head.min.js"></script>
+	<script src="js/reveal.js"></script>
+
+	<script>
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				history: true,
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: 'plugin/markdown/marked.js' },
+					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/notes/notes.js', async: true },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+				]
+			});
+		</script>
+</body>
+</html>

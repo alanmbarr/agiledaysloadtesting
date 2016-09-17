@@ -1,0 +1,20 @@
+.shownCode {
+    display: none;
+}
+.fragment.visible:not(.current-fragment) {
+    display: none;
+    height:0px;
+    line-height: 0px;
+    font-size: 0px;
+}
+
+body:after {
+  content: url(../images/agile-days-logo-white-small.png);
+  position: fixed;
+  bottom: 3.5em;
+  left: 3.5em;
+}
+
+.skyblue {
+	color: skyblue;
+}
