@@ -45,7 +45,7 @@
 					<aside class="notes">
 						Integrating load testing as part of your project ramp up is beneficial at any time. Having knowledge and reporting on what your project can support is beneficial for planning.
 					</aside>
-				</section>
+			</section>
 			<section>
 				<h3>Load Testing myVu</h3>
 				<p>Where do I start?</p>
@@ -313,25 +313,28 @@ class MyLocust(HttpLocust):
 			</section>
 			<section>
 				<h3>Testing Iteration</h3>
-				<span class="fragment"><img alt="Graph with Monitoring Statistics showing many requests at different times" data-src="images/monitoring.png" alt=""></span>
+				<span class="fragment"></span>
 				<aside class="notes">
 					We ran initial tests and the performance was not as robust as we expected.
 We ran the tests and we were limited in how many users we could run without causing many disconnects from the server.
-We monitored our file upload durations in our logging system but the performance seemed rather poor.
-
-We also did not have a lot of information on the state of our webservers.
-We purchased a service to monitor our test bed webserver and were able to see much finer grain data about our test results.
-With communication aout our results we learned that the internal testing network was bandwidth constrained from 10mb/s to 200mb/s
-				</aside>
+Talking with our team about the poor results we learned from our network team that the internal testing network was bandwidth constrained.
+They were able to increase it from 10mb/s to 200mb/s. We were now able to push more users through the funnel.
+We also did not have a lot of information on the state of our webservers we needed some type of monitoring system.
+We purchased a service called LeanSentry to monitor our test bed webserver and were able to see much finer grain data about our test results.
+We also ran out of space on our file storage server causing some headache for other teams.
+			</aside>
 			</section>
 			<section>
 				<h3>Monitoring Results</h3>
-				<aside class="notes">We were now able to push more users through the funnel.
+				<aside class="notes">
+Once we had monitoring setup we were able to better make changes during our tests and see the impact of those changes.
 Drilling into the web server monitoring software we learned that our main bottleneck is logging.
 Waiting for a shared log to become available was causing the biggest pause.
 We determined that all loggers and log readers work on the same file causing performance issues
 				</aside>
+				<img alt="Graph with Monitoring Statistics showing many requests at different times" data-src="images/monitoring.png">
 			</section>
+			<section>
 			<section>
 				<h3 class="fragment">Testing Our Hypothesis</h3>
 				<p class="fragment">Can we improve upload times by changing how we log our data?</p>
@@ -361,9 +364,10 @@ We determined that all loggers and log readers work on the same file causing per
 		</tr>
 	</tbody>
 </table>
-
-<p class="skyblue">Test run with experimental logging utility</p>
-				<table>
+	</section>
+	<section>
+	<p class="skyblue">Test run with experimental logging utility</p>
+<table>
 	<thead>
 		<tr>
 			<td># Requests</td>
@@ -389,6 +393,7 @@ We determined that all loggers and log readers work on the same file causing per
 </table>
 	<p><small>Request times in seconds</small></p>
 </span>
+	</section>
 			</section>
 		<section>
 			<h3>Results</h3>
@@ -399,7 +404,12 @@ We determined that all loggers and log readers work on the same file causing per
 			</aside>
 		</section>
 		<section>
+			<section>
+			<h3>Questions?</h3>
+			</section>
+			<section>
 			<h3>Thank You</h3>
+			</section>
 		</section>
 		</div>
 	</div>
