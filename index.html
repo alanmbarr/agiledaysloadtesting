@@ -179,7 +179,7 @@ casper.run();
 			<section>
 								<h4>Locust.IO</h4>
 								
-								<img alt="Locust Load Testing Logo"style="background-color:white;" data-src="images/locust-logo.png">
+								<img class="fragment" alt="Locust Load Testing Logo" style="background-color:white;" data-src="images/locust-logo.png">
 					<p class="fragment">Python 2.7, Requests and Requests Tool-belt modules</p>
                         <span class="fragment current-visible">
                         <p>Load config data</p>
@@ -207,27 +207,29 @@ host = config["host"]
 <span class="fragment current-visible">
                         <p>Create a task to run</p>
                         <pre>
-                        	<code>
+                        	<code style="max-height:500px;">
 
 class MyTaskSet1(TaskSet):
 
-@task
-def file_upload(self):
-global token
-attach = open('assets/Intro_to_Agile.pdf', 'rb')
-randomNumber = randint(0, 1)
-thisToken = token[randomNumber]
-headers = {
-'Authorization': thisToken,
-}
-m = MultipartEncoder(
-fields={
-'atlasLeadId':atlasID[thisToken],'blitzDocFolderId':'-1','documentType':'upload',
-'file0': ('Intro_To_Agile.pdf', attach, 'application/pdf', {'Expires': '0'})}
-)
-r = self.client.post("/api/fileStorage/Upload",
-data=m,headers=headers, verify=False, catch_response=False)
-print("Locust instance ({}) executing my_task".format(self.locust))
+	@task
+	def file_upload(self):
+		global token
+		attach = open('assets/Intro_to_Agile.pdf', 'rb')
+		randomNumber = randint(0, 1)
+		
+		thisToken = token[randomNumber]
+		headers = { 'Authorization': thisToken }
+		m = MultipartEncoder(
+		fields = {
+		'atlasLeadId':atlasID[thisToken],
+		'blitzDocFolderId':'-1',
+		'documentType':'upload',
+		'file0': ('Intro_To_Agile.pdf', attach, 'application/pdf', {'Expires': '0'})
+				}
+		)
+		r = self.client.post("/api/fileStorage/Upload",
+		data=m,headers=headers, verify=False, catch_response=False)
+		print("Locust instance ({}) executing my_task".format(self.locust))
                                 </code>
                         </pre>
 </span>
@@ -358,6 +360,9 @@ We had turned off logging and saw a nice increase in our uploads but it wasn't a
 			<section>
 				<h3 class="fragment">Testing Our Hypothesis</h3>
 				<p class="fragment">Can we improve upload times by changing how we log our data?</p>
+				<aside class="notes">
+					The turn around time for finding what a possible solution could be and reaching out to our senior engineers to come up with an experimental solution took a matter of days. Testing these changes was only a matter of ours. By automating your load testing procedure you can test your hypotheses and verify your results in a very rapid way.
+				</aside>
 <span class="fragment">
 <p class="skyblue">Test run with current logging on</p>
 <table>
@@ -421,7 +426,7 @@ We had turned off logging and saw a nice increase in our uploads but it wasn't a
 			<p>65% decrease in the median and average upload times</p>
 			<p class="fragment">Small change with an impressive impact</p>
 			<aside class="notes">
-				
+				By automating the load testing continually auditing our systems and starting communication around the different teams we were more rapidly able to test our ideas and find a fix.
 			</aside>
 		</section>
 		<section>
