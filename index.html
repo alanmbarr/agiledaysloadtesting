@@ -29,6 +29,7 @@
 			<section>
 				<h2>Load Testing in the Azure Cloud</h2>
 				<p>Alan Barr</p>
+				<p>QA Engineer</p>
 				 <img style="background-color:white;" data-src="images/azure.png" alt="Microsoft Azure Cloud Logo">
 			</section>
 			<section>
@@ -43,7 +44,7 @@
 						Load Testing gives us reporting to know what changes are making the most impact
 					</p>
 					<aside class="notes">
-						Integrating load testing as part of your project ramp up is beneficial at any time. Having knowledge and reporting on what your project can support is beneficial for planning.
+						Integrating load testing as part of your project ramp up is beneficial at any time. Having knowledge and reporting on what your project can support is beneficial for planning. As features are completed related to performance load tests can be written once and run many times to verify performance improvements.
 					</aside>
 			</section>
 			<section>
@@ -84,9 +85,8 @@
 				</p>
 				<p class="fragment">Allow for different upload scenarios</p>
 				<aside class="notes">
-					The challenges inherent to testing myVU drove adoption of the tool. The primary things the tool would need to support
-						would be to use an authorization token with requests, manage sending requests from different locations at the same time,
-						multipart form uploads.
+					The challenges inherent to testing myVU drove adoption of the tool. We needed to handle communicating with the server using the correct credentials,
+					handle a variety of different file types and sizes, and upload these files from different geographic locations to simulate real life user network load.
 				</aside>
 			</section>
 			<section>
@@ -243,6 +243,15 @@ class MyLocust(HttpLocust):
                                 </code>
                             </pre>
                         </span>
+                    </section>
+            <section>
+            	<h4>Start Testing?</h4>
+                        <img src="images/starttest.png" alt="Locust Web UI">
+                <aside class="notes">
+				We could very well just start our tests straight away. However, there is some ground work one must do. One key piece of this is running load test
+				in a distributed environment. While we could certainly do it from one computer or local computers we wanted to simulate our users experience.
+				Which leads to setting up the cloud environment.
+				</aside>
 			</section>
 			<section>
 			<h4>Azure Cloud</h4>
@@ -255,6 +264,7 @@ class MyLocust(HttpLocust):
 						<li>Configure ports so machines can communicate</li>
 						<li>Open a port so these machines can access your network</li>
 						<li>Optionally: Setup an Azure Function Endpoint to send results to an Azure Storage Table</li>
+						<li>Optionally: Graph our Data in an Azure Notebook</li>
 					</ul>
 			</section>
 			<section>
@@ -310,6 +320,103 @@ class MyLocust(HttpLocust):
                           <img alt="Azure Database with Rows" data-src="images/storagetable.png">
                       </span>
 					</section>
+				<section>
+				<h4>Azure Notebooks</h4>
+				<img src="images/notebook.png" alt="Azure Python Notebook">
+				</section>
+				<section>
+					<h4>Graphing Data in our Notebook</h4>
+					<section>
+                        <p>Connecting to the storage table from our notebook</p>
+                        <pre><code>
+import os
+import json
+import azure
+from azure.storage import table
+
+def get_all_entities(table_service, table, filterLogic):
+    i = 0
+    next_pk = None
+    next_rk = None
+    while True:
+        entities = table_service.query_entities(
+            table, filter=filterLogic,
+            next_partition_key = next_pk,
+            next_row_key = next_rk, top=1000)
+        i += 1
+        for entity in entities:
+            yield entity
+        if hasattr(entities, 'x_ms_continuation'):
+            x_ms_continuation = entities.x_ms_continuation
+            next_pk = x_ms_continuation['nextpartitionkey']
+            next_rk = x_ms_continuation['nextrowkey']
+        else:
+            break
+
+headers = ["Timestamp", "client_id", "user_count", "name", "method", "max_response_time", "total_response_time", 
+    "min_response_time", "last_request_timestamp", "num_requests", "total_content_length", "num_failures",
+     "start_time", "test_name", "num_reqs_per_sec", "response_times"]
+
+if not os.path.exists("stats.tsv"):
+    print("grabbing data - please wait...")
+    ts = table.TableService(account_name="locustreportstorage",
+sas_token="mysupersecretsharedaccesstoken",protocol="https")
+    with open ("stats.tsv", 'w+') as f:
+        f.write("\t".join(headers)+ "\n")
+    ents = get_all_entities(ts,"locustReportOutTable", filterLogic="PartitionKey ne ''")
+    for e in ents:
+        with open("stats.tsv", 'a+') as f:
+            rps = json.loads(e.num_reqs_per_sec) if hasattr(e, 'num_reqs_per_sec') and e.num_reqs_per_sec != "{}" else ""
+            resp = json.loads(e.response_times) if hasattr(e, 'response_times') and e.response_times != "{}" else ""
+            list_items = [e.Timestamp.strftime("%c"), e.client_id,
+              e.user_count, e.name, e.method, e.max_response_time,
+	          e.total_response_time, e.min_response_time,
+	          e.last_request_timestamp, e.num_requests,
+	          e.total_content_length, e.num_failures, e.start_time, e.test_name,
+	          rps,resp]
+            f.write("\t".join(map(str,list_items))+ "\n")
+    
+    print("data written to disk")
+else:
+    print("data exists")
+                        
+                                </code>
+                            </pre>
+                        </section>
+
+				</section>
+				<section>
+					<h4>Rendering a graph with Pandas</h4>
+					<pre><code style="max-height:100%;">
+import os
+from pandas import *
+import matplotlib.dates as dates
+import matplotlib.pyplot as plt
+%matplotlib notebook
+import datetime
+    data = pandas.read_csv("stats.tsv", sep="\t", header=0, usecols=["Timestamp","client_id","user_count","name",
+         "max_response_time","total_response_time","min_response_time","last_request_timestamp","num_requests",
+         "start_time","test_name","num_reqs_per_sec","response_times"])
+    data['Timestamp'] = pandas.to_datetime(data['Timestamp'])
+    data['last_request_timestamp'] = pandas.to_datetime(data['last_request_timestamp'], unit='s')
+    data['start_time'] = pandas.to_datetime(data['start_time'], unit='s')
+    start = "2016-08-30 16:44:50"
+    end = "2016-08-30 18:59:01"
+    df = DataFrame(data)
+    df = df.sort_values(by="start_time")
+    df = df.set_index(["start_time"])
+    df.index.to_pydatetime()
+    datedf = df.loc[start:end].dropna(how='any')
+    datedf = datedf.loc[:,['total_response_time']]
+    ax = datedf.plot()
+    ax.set(xlabel="Test duration", ylabel="Response Times in ms")
+    ax.xaxis.set_major_formatter(dates.DateFormatter('\n%X'))
+					</code></pre>
+                </section>
+                <section>
+                	<h4>Graph Result</h4>
+                	<img style="background-color:white;" src="images/response_times.png" alt="Response Time Results with a large distribution">
+                </section>
 			</section>
 			<section>
 				<h3>Testing Iteration</h3>
@@ -331,6 +438,8 @@ Once we had monitoring setup we were able to better make changes during our test
 Drilling into the web server monitoring software we learned that our main bottleneck is logging.
 Waiting for a shared log to become available was causing the biggest pause.
 We determined that all loggers and log readers work on the same file causing performance issues
+
+We had turned off logging and saw a nice increase in our uploads but it wasn't a solution we could depend on.
 				</aside>
 				<img alt="Graph with Monitoring Statistics showing many requests at different times" data-src="images/monitoring.png">
 			</section>
