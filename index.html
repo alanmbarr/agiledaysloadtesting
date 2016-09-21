@@ -268,6 +268,9 @@ class MyLocust(HttpLocust):
 						<li>Optionally: Setup an Azure Function Endpoint to send results to an Azure Storage Table</li>
 						<li>Optionally: Graph our Data in an Azure Notebook</li>
 					</ul>
+					<aside class="notes">The benefits of using linux vms are that they were lightweight no GUI and fast to script the setup of. Deploying changes to our
+					test scenarios was as simple as rsyncing our changes and broadcasting the commands to execute. The majority of my testing was inexpensive the Azure Function and noSQL database added more cost due to the requiring of a specific azure plan.
+					</aside>
 			</section>
 			<section>
 					<section>
@@ -318,6 +321,11 @@ class MyLocust(HttpLocust):
                             </code>
                         </pre>
                     </span>
+                    <aside class="notes"><p>An Azure function allows me to create an API endpoint without having to setup a server.</p>
+
+                    <p>The Azure storage table is an inexpensive noSQL database I can put my data into. There are other options like noSQL blob storage
+                    	or a more expensive sql database. I could also send my data to other Azure services as well.</p>
+					</aside>
 						<span class="fragment current-visible">
                           <img alt="Azure Database with Rows" data-src="images/storagetable.png">
                       </span>
@@ -448,13 +456,71 @@ We had turned off logging and saw a nice increase in our uploads but it wasn't a
 				history: true,
 
 				// More info https://github.com/hakimel/reveal.js#dependencies
-				dependencies: [
+				dependencies: 
+				[
 					{ src: 'plugin/markdown/marked.js' },
 					{ src: 'plugin/markdown/markdown.js' },
+					{ src: 'plugin/gamepad/gamepad.js' },
 					{ src: 'plugin/notes/notes.js', async: true },
-					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } }
+					{ src: 'plugin/highlight/highlight.js', async: true, 
+					callback: function() { hljs.initHighlightingOnLoad(); setupPad(); } 
+					}
 				]
 			});
+		function setupPad() {
+			var gp = new GamepadMicro();
+			
+			gp.onUpdate(function(gamepads) {
+
+		    if (gp.gamepadConnected) {
+		    	var presenterPad = gp.gamepads[0];
+				var buttons = presenterPad.buttons;
+				if(Object.keys(buttons).length > 0){
+				
+					var keys = Object.keys(buttons);
+					keys.forEach(function(button){
+						var btn = buttons[button];
+						if(btn.released){
+							switch(button) {
+						    case "dPadLeft":
+						        Reveal.navigateLeft();
+						        break;
+						    case "dPadRight":
+								Reveal.navigateRight();
+						        break;
+						    case "dPadUp":
+						        Reveal.navigateUp();
+						        break;
+						    case "dPadDown":
+						        Reveal.navigateDown();
+						        break;
+						    case "leftTrigger":
+						    	Reveal.navigatePrev();
+						    	break;
+						    case "rightTrigger":
+								Reveal.navigateNext();
+								break;
+							default:
+								break;
+							}
+		
+						}
+
+					    if (btn.pressed) {
+					        //button is being pressed, run desired action on release
+					    }
+
+					    if (btn.held) {
+					        //button is being held
+					    }
+
+					});
+				}
+
+
+			    }
+			});	
+		}
 		</script>
 </body>
 </html>
